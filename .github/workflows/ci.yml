@@ -1,0 +1,129 @@
+name: CI - Testes Automatizados
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  client-unit-tests:
+    name: Testes Unitários - Cliente (Jest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+        working-directory: client
+
+      - name: Executar testes Jest
+        run: npm test
+        working-directory: client
+
+  api-unit-tests:
+    name: Testes Unitários - API (JUnit + H2)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Executar testes Maven
+        run: ./mvnw test
+        working-directory: api
+
+  e2e-and-api-tests:
+    name: Testes E2E e de API (Playwright)
+    runs-on: ubuntu-latest
+    needs: [client-unit-tests, api-unit-tests]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: sqa_social_media
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: admin
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Build da API (sem testes)
+        run: ./mvnw package -DskipTests
+        working-directory: api
+
+      - name: Iniciar API em background
+        run: |
+          java -jar target/demo-0.0.1-SNAPSHOT.jar &
+          echo "Aguardando API iniciar..."
+          timeout 90 bash -c 'until curl -sf http://localhost:8080/posts > /dev/null 2>&1; do sleep 3; done'
+          echo "API pronta!"
+        working-directory: api
+
+      - name: Instalar dependências do cliente
+        run: npm ci
+        working-directory: client
+
+      - name: Build do cliente
+        run: npm run build
+        working-directory: client
+
+      - name: Iniciar cliente em background
+        run: |
+          npm start &
+          echo "Aguardando cliente iniciar..."
+          timeout 60 bash -c 'until curl -sf http://localhost:3000 > /dev/null 2>&1; do sleep 3; done'
+          echo "Cliente pronto!"
+        working-directory: client
+
+      - name: Instalar dependências do Playwright
+        run: npm ci
+        working-directory: tests
+
+      - name: Instalar browser (Firefox)
+        run: npx playwright install firefox --with-deps
+        working-directory: tests
+
+      - name: Executar testes Playwright
+        run: npx playwright test
+        working-directory: tests
+
+      - name: Upload do relatório Playwright
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: tests/playwright-report/
+          retention-days: 7
