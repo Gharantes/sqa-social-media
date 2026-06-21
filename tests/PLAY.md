@@ -13,3 +13,6 @@
 - npx playwright test e2e/sign-up.spec.ts --headed 
 
 <!-- --ui -->
+
+## API 
+- npx playwright test api
