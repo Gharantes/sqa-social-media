@@ -4,7 +4,7 @@ const URL = 'http://localhost:3000/';
 const email = "Teste@gmail.com";
 const password = "Teste123@";
 
-test.describe("Fluxo de Cadastro", () => {
+test.describe("Fluxo de Cadastro e Login", () => {
     test.beforeEach(async ({ page }) => {
         await page.goto(URL);
     })

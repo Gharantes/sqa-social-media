@@ -44,10 +44,10 @@ public class PostService {
 
       Set<Long> likedPostIds = new HashSet<>();
       if (userId != null) {
-        likedPostIds = reactionRepository.findByUserId(userId)
-          .stream()
-          .map(UserPostReaction::getPostId)
-          .collect(Collectors.toSet());
+//        likedPostIds = reactionRepository.findByUserId(userId)
+//          .stream()
+//          .map(UserPostReaction::getPostId)
+//          .collect(Collectors.toSet());
       }
 
       List<Map<String, Object>> posts = new ArrayList<>();
