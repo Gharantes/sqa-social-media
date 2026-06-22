@@ -1,7 +1,8 @@
+## Frontend
 - npm run dev
 
-
-    Open testing UI: 
+## Backend
+./mvnw spring-boot:run
 
 ## Run Open Page
 - npx playwright test e2e/open-page.spec.ts
@@ -11,8 +12,6 @@
 
 ## Run SignUp
 - npx playwright test e2e/sign-up.spec.ts --headed 
-
-<!-- --ui -->
 
 ## API 
 - npx playwright test api
